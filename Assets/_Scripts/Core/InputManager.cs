@@ -1,4 +1,5 @@
 using System;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -10,7 +11,12 @@ namespace RF.Core
 
         public Vector2 inputVector { get; private set; }
 
+        public InputAction aimAction;
+        public InputAction lookAction;
+
         public event Action onJump;
+        public event Action onAimStart;
+        public event Action onAimStop;
 
         private void Awake()
         {
@@ -21,12 +27,19 @@ namespace RF.Core
         {
             inputActions.Enable();
 
+            aimAction = inputActions.Player.Aim;
+            lookAction = inputActions.Player.Look;
+
             inputActions.Player.Jump.performed += OnJump;
+            inputActions.Player.Aim.started += Aim;
+            inputActions.Player.Aim.canceled += Aim;
         }
 
         private void OnDisable()
         {
             inputActions.Player.Jump.performed -= OnJump;
+            inputActions.Player.Aim.started -= Aim;
+            inputActions.Player.Aim.canceled -= Aim;
 
             inputActions.Disable();
         }
@@ -34,6 +47,20 @@ namespace RF.Core
         private void OnJump(InputAction.CallbackContext context)
         {
             onJump?.Invoke();
+        }
+
+        private void Aim(InputAction.CallbackContext context)
+        {
+            if (context.started)
+            {
+                print("Started");
+                onAimStart?.Invoke();
+            }
+            else if (context.canceled)
+            {
+                print("Canceled");
+                onAimStop?.Invoke();
+            }
         }
 
         public Vector2 GetInputVector()

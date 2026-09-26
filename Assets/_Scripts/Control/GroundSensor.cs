@@ -4,17 +4,20 @@ namespace RF.Control
 {
     public class GroundSensor : MonoBehaviour
     {
-        [SerializeField] private bool isGrounded;
-        public bool IsGrounded() => isGrounded;
+        [SerializeField] private CharacterCore core;
 
-        private void OnTriggerStay(Collider other)
+        private void Awake()
         {
-            isGrounded = true;
+            if (core == null)
+            {
+                core = GetComponentInParent<CharacterCore>();
+            }
         }
 
-        private void OnTriggerExit(Collider other)
+
+        public bool IsGrounded()
         {
-            isGrounded = false;
+            return core.CharacterController.isGrounded;
         }
     }
 }

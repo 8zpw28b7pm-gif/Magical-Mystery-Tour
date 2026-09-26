@@ -6,6 +6,8 @@ namespace RF.Movement
 {
     public class Mover : MonoBehaviour
     {
+        [Header("References")]
+        [SerializeField] private CharacterCore core;
 
         [Header("Movement")]
         [SerializeField] private float groundSpeed = 5f;
@@ -13,70 +15,63 @@ namespace RF.Movement
         [SerializeField, Range(0, 1)] private float groundDecay = 0.9f;
         [SerializeField] private float rotationSpeed = 12f;
 
-        [Header("Jumping")]
+        [Header("Jumping and Gravity")]
         [SerializeField] private float jumpSpeed = 5f;
+        [SerializeField] private float gravity = -9.81f;
+        [SerializeField] private float gravityMultiplier = 3f;
 
-        [Header("Jumping")]
-        [SerializeField] private GroundSensor groundSensor;
+        [SerializeField] private float verticalVelocity;
 
-        [Header("Visual")]
-        [SerializeField] private Transform visualTransform;
-
-
-        public void MoveWithInput(Vector3 moveDirection, Rigidbody body)
+        public void Move()
         {
-            moveDirection.y = 0f;
-            moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
+            Vector3 velocity = core.moveDirection * groundSpeed;
+            velocity.y = verticalVelocity;
 
-            if (moveDirection.sqrMagnitude > 0f)
+            core.CharacterController.Move(velocity * Time.deltaTime);
+        }
+
+        public void Jump()
+        {
+            if (core.GroundSensor.IsGrounded() && verticalVelocity < 0)
             {
-                Vector3 velocity = body.linearVelocity;
-                Vector3 horizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
-
-                horizontalVelocity += moveDirection * acceleration;
-                horizontalVelocity = Vector3.ClampMagnitude(horizontalVelocity, groundSpeed);
-
-                body.linearVelocity = new Vector3(
-                    horizontalVelocity.x,
-                    velocity.y,
-                    horizontalVelocity.z
-                );
+                verticalVelocity = jumpSpeed;
             }
         }
 
-        public void HandleJump(Rigidbody body)
+        public void ApplyGravity()
         {
-            if (groundSensor.IsGrounded())
+            if (core.GroundSensor.IsGrounded() && verticalVelocity < 0f)
             {
-                Vector3 velocity = body.linearVelocity;
-                body.linearVelocity = new Vector3(velocity.x, jumpSpeed, velocity.z);
+                verticalVelocity = -2f;
             }
+
+            verticalVelocity += gravity * gravityMultiplier * Time.deltaTime;
         }
 
-        public void ApplyFriction(Vector3 moveDirection, Rigidbody body)
+        public void FaceDirection()
         {
-            moveDirection.y = 0f;
+            Vector3 targetDirection = core.moveDirection;
+            targetDirection.y = 0f;
 
-            if (groundSensor.IsGrounded() &&
-                moveDirection.sqrMagnitude == 0f &&
-                body.linearVelocity.y <= 0f)
-            {
-                Vector3 velocity = body.linearVelocity;
+            if (targetDirection == Vector3.zero) return;
 
-                body.linearVelocity = new Vector3(
-                    velocity.x * groundDecay,
-                    velocity.y,
-                    velocity.z * groundDecay
-                );
-            }
+            Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
 
-        public void FaceDirection(Vector3 moveDirection)
+        public void FaceAimingDirection()
         {
-            if (moveDirection == Vector3.zero) return;
+            Vector3 direction = Camera.main.transform.forward;
+            direction.y = 0f;
 
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
+            if (direction.sqrMagnitude < 0.001f) return;
+
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRotation,
+                rotationSpeed * Time.deltaTime);
         }
     }
 }

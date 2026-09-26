@@ -1,28 +1,33 @@
-using System;
 using RF.Core;
 using RF.Movement;
-using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Video;
 
 namespace RF.Control
 {
-    public class PlayerController : MonoBehaviour
+    public class PlayerController : CharacterCore
     {
-        private Camera mainCamera;
         [SerializeField] private InputManager inputManager;
-        [SerializeField] private Mover mover;
+        [SerializeField] private PlayerAimController aimController;
+        
+        [SerializeField] private GameObject crosshair;
 
-        [SerializeField] private GroundSensor groundSensor;
 
-        [SerializeField] private Rigidbody body;
+        public float horizontalInput;
+        public float verticalInput;
 
-        private Vector3 moveDirection;
-        private float horizontalInput;
-        private float verticalInput;
+        public bool isGrounded;
 
+        private Camera mainCamera;
+
+        Vector3 aimDirection;
+        public bool isAiming;
 
         private void Awake()
         {
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+
             if (mover == null)
             {
                 mover = GetComponent<Mover>();
@@ -39,6 +44,7 @@ namespace RF.Control
         private void OnEnable()
         {
             inputManager.onJump += HandleJump;
+
         }
 
         private void OnDisable()
@@ -48,32 +54,52 @@ namespace RF.Control
 
         private void Update()
         {
+            isAiming = inputManager.aimAction.IsPressed();
+            crosshair.SetActive(isAiming);
+
+            SetMoveDirection();
+
+            mover.ApplyGravity();
+            mover.Move();
+
+         
+        }
+
+        private void SetMoveDirection()
+        {
             Vector2 input = inputManager.GetInputVector();
+            verticalInput = input.y;
+            horizontalInput = input.x;
 
             Vector3 forward = mainCamera.transform.forward;
             Vector3 right = mainCamera.transform.right;
 
-            forward.y = 0f;
-            right.y = 0f;
+            forward.y = 0;
+            right.y = 0;
 
-            moveDirection = Vector3.ClampMagnitude(
-                forward.normalized * input.y +
-                right.normalized * input.x,
-                1f
-            );
+            forward.Normalize();
+            right.Normalize();
+
+            moveDirection = (forward * verticalInput) + (right * horizontalInput);
+            moveDirection = moveDirection.normalized;
         }
 
-        private void FixedUpdate()
+        private void SetLookDirection()
         {
-            mover.MoveWithInput(moveDirection, body);
-            mover.FaceDirection(moveDirection);
-        }
+            Vector2 lookVector = inputManager.lookAction.ReadValue<Vector2>();
 
+            aimDirection = new Vector3(0, lookVector.x, 0);
+        }
         private void HandleJump()
         {
             if (!groundSensor.IsGrounded()) return;
 
-            mover.HandleJump(body);
+            mover.Jump();
+        }
+
+        private void HandleAim()
+        {
+
         }
     }
 }
