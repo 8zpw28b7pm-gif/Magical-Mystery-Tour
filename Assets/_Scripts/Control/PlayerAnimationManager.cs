@@ -1,6 +1,7 @@
 using RF.Control;
 using StarterAssets;
 using UnityEngine;
+using UnityEngine.TextCore.Text;
 
 namespace RF.Animation
 {
@@ -27,18 +28,25 @@ namespace RF.Animation
         private void Update()
         {
             UpdateAnimatorMovementValues(characterController);
+            UpdateVerticalValues(characterController);
 
+            if (_groundSensor.IsGrounded)
+            {
+                ResetJumpTrigger();
+            }
             animator.SetBool("IsGrounded", _groundSensor.IsGrounded);
         }
 
         public void TriggerJumpAnimation()
         {
+            animator.SetBool("HasJumped", true);
             animator.SetTrigger("Jump");
         }
 
         public void ResetJumpTrigger()
         {
             animator.ResetTrigger("Jump");
+            animator.SetBool("HasJumped", false);
         }
 
         public void UpdateAnimatorMovementValues(CharacterController controller)
@@ -48,6 +56,11 @@ namespace RF.Animation
             Vector3 inverseVelocity = transform.InverseTransformDirection(velocity);
             float forwardsSpeed = Mathf.Abs(inverseVelocity.magnitude);
             animator.SetFloat("ForwardSpeed", forwardsSpeed, 0.1f, Time.deltaTime);
+        }
+
+        public void UpdateVerticalValues(CharacterController controller)
+        {
+            animator.SetFloat("VerticalSpeed", controller.velocity.y, 0.1f, Time.deltaTime);
         }
     }
 }

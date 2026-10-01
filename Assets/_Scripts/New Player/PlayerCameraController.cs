@@ -22,7 +22,7 @@ namespace RF.Control
         private float _cinemachineTargetPitch;
 
 
-        private const float _threshold = 0.01f;
+        private const float _threshold = 0.00f;
 
         public void CameraRotation(InputHandler input, bool isCurrentDeviceMouse)
         {
